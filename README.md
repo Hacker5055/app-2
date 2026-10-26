@@ -14,6 +14,23 @@ a tracker tag or an unnamed beacon.
 
 ---
 
+## Download the APK
+
+| What | Where |
+| ---- | ----- |
+| **Latest signed-for-testing ARM64 APK** | [**app-release.apk (v1.0.0)**](https://github.com/Hacker5055/app-2/releases/download/apk-latest/app-release.apk) · [all releases](https://github.com/Hacker5055/app-2/releases) |
+| Build logs / artifacts | [GitHub Actions](https://github.com/Hacker5055/app-2/actions/workflows/android-release.yml) |
+
+The APK is produced by CI on every push to `main` (and on this branch) with
+exactly the command in the next section, then published to the rolling
+`apk-latest` release — 18.2 MB, `arm64-v8a` only, R8 + resource shrinking,
+signed with the debug keystore (installable, not Play-publishable).
+
+Install it with `adb install -r app-release.apk`, or open the link on the phone
+and allow "install unknown apps" for your browser.
+
+---
+
 ## Table of contents
 
 1. [Quick start](#quick-start)
@@ -50,7 +67,9 @@ a deterministic simulator so nothing has to be faked in the UI layer.
 
 ## Build the ARM64 release APK
 
-The deliverable build is a single, arm64-v8a only, minified release APK:
+The deliverable build is a single, arm64-v8a only, minified release APK.
+It is built automatically by [`.github/workflows/android-release.yml`](.github/workflows/android-release.yml)
+on every push; the same command works locally:
 
 ```bash
 flutter clean

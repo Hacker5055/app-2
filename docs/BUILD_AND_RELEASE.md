@@ -106,28 +106,29 @@ Confirm that `usesPermissionFlags="neverForLocation"` survived the merge — it 
 in the merged manifest as `android:usesPermissionFlags="neverForLocation"`; `aapt2
 dump xmltree --file AndroidManifest.xml <apk>` shows it verbatim.
 
-## CI sketch
+## Continuous delivery
 
-```yaml
-name: android-release
-on: { push: { branches: [main] } }
-jobs:
-  apk:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '17' }
-      - uses: subosito/flutter-action@v2
-        with: { channel: stable, flutter-version: '3.27.0', cache: true }
-      - run: flutter pub get
-      - run: flutter test
-      - run: flutter build apk --release --target-platform android-arm64
-      - uses: actions/upload-artifact@v4
-        with:
-          name: bluetooth-finder-radar-arm64
-          path: build/app/outputs/flutter-apk/app-release.apk
-```
+[`.github/workflows/android-release.yml`](../.github/workflows/android-release.yml)
+builds the APK on every push to `main`/`arena/**`, on tags `v*`, and on manual
+`workflow_dispatch`:
+
+1. JDK 17 + Flutter 3.27.4 (cached),
+2. `flutter pub get`,
+3. `flutter analyze` and `flutter test` (informational — they never block the APK),
+4. `flutter build apk --release --target-platform android-arm64`,
+5. upload the artifact (`bluetooth-finder-radar-arm64`) and publish/refresh the
+   rolling **`apk-latest`** prerelease with `app-release.apk`,
+6. tags `v*` additionally get a versioned release.
+
+Direct download: <https://github.com/Hacker5055/app-2/releases/download/apk-latest/app-release.apk>
+
+First green build: run
+[40316317550](https://github.com/Hacker5055/app-2/actions/runs/40316317550),
+18,169,764 bytes.
+
+When a build fails the workflow writes the analyze/test/build log tail to the
+`ci-logs` branch (`ci-build.log`) so the failure is diagnosable from the REST API
+even without access to Actions logs.
 
 ## Versioning
 
