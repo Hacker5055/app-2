@@ -8,7 +8,6 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/radar_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../domain/models/ble_device.dart';
-import '../../domain/models/ble_status.dart';
 import '../navigation.dart';
 import '../widgets/common/glow_button.dart';
 import '../widgets/common/labels.dart';

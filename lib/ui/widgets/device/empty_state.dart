@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_strings.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/radar_colors.dart';
 import '../common/glow_button.dart';
 import '../radar/radar_painter.dart';
@@ -30,7 +29,7 @@ class ScannerEmptyState extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
       child: Column(
         children: <Widget>[
-          SizedBox(
+          const SizedBox(
             width: 190,
             height: 190,
             child: Stack(
@@ -41,7 +40,7 @@ class ScannerEmptyState extends StatelessWidget {
                     width: 190,
                     height: 190,
                     child: CustomPaint(
-                      painter: const RadarGridPainter(
+                      painter: RadarGridPainter(
                         ringCount: 3,
                         maxRangeMeters: 15,
                         accent: RadarColors.cyan,
@@ -51,7 +50,7 @@ class ScannerEmptyState extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Icon(Icons.bluetooth_searching_rounded, size: 34, color: RadarColors.cyan),
+                Icon(Icons.bluetooth_searching_rounded, size: 34, color: RadarColors.cyan),
               ],
             ),
           ),

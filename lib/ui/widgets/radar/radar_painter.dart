@@ -404,10 +404,10 @@ class ReticlePainter extends CustomPainter {
   final double progress;
 
   @override
-  void paint(Canvas canvas, Size canvasSize) {
-    final Offset center = canvasSize.center(Offset.zero);
-    final double half = size / 2;
-    final double arm = size * 0.24;
+  void paint(Canvas canvas, Size size) {
+    final Offset center = size.center(Offset.zero);
+    final double half = this.size / 2;
+    final double arm = this.size * 0.24;
     final Paint paint = Paint()
       ..color = color.withValues(alpha: 0.85)
       ..strokeWidth = 1.4

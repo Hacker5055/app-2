@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +12,7 @@ import 'screens/device_radar_screen.dart';
 Future<void> openDeviceRadar(BuildContext context, BleDevice device) async {
   final BleController ble = context.read<BleController>();
   ble.selectDevice(device.id);
-  HapticFeedback.lightImpact();
+  unawaited(HapticFeedback.lightImpact());
   await Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (BuildContext context) => DeviceRadarScreen(

@@ -140,7 +140,6 @@ class NeonIconButton extends StatelessWidget {
     this.filled = false,
     this.tooltip,
     this.badge,
-    this.matchTextDirection = false,
   });
 
   final IconData icon;
@@ -151,7 +150,6 @@ class NeonIconButton extends StatelessWidget {
   final bool filled;
   final String? tooltip;
   final Widget? badge;
-  final bool matchTextDirection;
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +176,6 @@ class NeonIconButton extends StatelessWidget {
                   icon,
                   size: iconSize,
                   color: onPressed == null ? RadarColors.textMuted : color,
-                  matchTextDirection: matchTextDirection,
                 ),
                 if (badge != null) PositionedDirectional(top: 6, end: 6, child: badge!),
               ],

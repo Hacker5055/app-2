@@ -27,7 +27,7 @@ class PathLossCalculator {
   /// sensitivity floor, and anything above -20 dBm is physically implausible.
   /// The result is always finite and inside `[0.05 m, 200 m]`.
   double distanceMeters(double rssi) {
-    if (!rssi.isFinite) return AppConstants.maxRadarRangeMeters;
+    if (!rssi.isFinite) return AppConstants.defaultRadarRangeMeters;
     final double safeRssi = rssi.clamp(-127.0, -20.0).toDouble();
     final double exponent = (txPower - safeRssi) / (10.0 * pathLossExponent);
     final double meters = math.pow(10.0, exponent).toDouble();

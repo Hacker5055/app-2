@@ -214,7 +214,6 @@ class _DeviceRadarScreenState extends State<DeviceRadarScreen> with WidgetsBindi
       children: <Widget>[
         NeonIconButton(
           icon: Icons.arrow_back_rounded,
-          matchTextDirection: true,
           size: 40,
           iconSize: 19,
           color: RadarColors.textPrimary,

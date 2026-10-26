@@ -220,7 +220,6 @@ class _NearestDeviceCard extends StatelessWidget {
             Icons.chevron_right_rounded,
             size: 20,
             color: RadarColors.textMuted,
-            matchTextDirection: true,
           ),
         ],
       ),

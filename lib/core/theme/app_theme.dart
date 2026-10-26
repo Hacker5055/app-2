@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 
 import '../../domain/models/proximity_zone.dart';
@@ -32,7 +30,7 @@ class AppTheme {
       scrim: RadarColors.scrim,
     );
 
-    final TextTheme textTheme = const TextTheme(
+    const TextTheme textTheme = TextTheme(
       displayLarge: TextStyle(
         fontSize: 52,
         fontWeight: FontWeight.w700,
