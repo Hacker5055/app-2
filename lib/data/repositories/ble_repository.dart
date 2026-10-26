@@ -57,7 +57,7 @@ class BleRepository {
   /// Shows Android's "enable Bluetooth" system dialog when possible.
   Future<bool> requestBluetoothEnable() async {
     if (_real is FlutterBlueScannerService) {
-      return (_real as FlutterBlueScannerService).requestTurnOn();
+      return _real.requestTurnOn();
     }
     return false;
   }

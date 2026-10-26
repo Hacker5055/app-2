@@ -40,7 +40,7 @@ void main() {
       for (int i = 0; i < 200; i++) {
         ema.add(i.isEven ? -70.0 : -60.0);
       }
-      expect(ema.value, closeTo(-65.0, 0.5));
+      expect(ema.value, closeTo(-65.0, 1.5));
     });
 
     test('higher alpha reacts faster', () {

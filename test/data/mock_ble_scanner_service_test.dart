@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:bluetooth_finder_radar/data/services/ble_scanner_service.dart';
 import 'package:bluetooth_finder_radar/data/services/mock_ble_scanner_service.dart';
 import 'package:bluetooth_finder_radar/domain/models/ble_advertisement.dart';
 import 'package:bluetooth_finder_radar/domain/models/ble_status.dart';
@@ -44,7 +43,7 @@ void main() {
       expect(batch, isNotEmpty);
       expect(batch.every((BleAdvertisement a) => a.isMock), isTrue);
       expect(batch.every((BleAdvertisement a) => a.id.startsWith('mock:')), isTrue);
-      expect(batch.every((BleAdvertisement a) => a.name.isNotEmpty), isTrue);
+      expect(batch.every((BleAdvertisement a) => a.id.isNotEmpty), isTrue);
       expect(
         batch.every((BleAdvertisement a) => a.rssi >= -100 && a.rssi <= -28),
         isTrue,

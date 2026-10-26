@@ -295,11 +295,17 @@ def check_members(
     members: dict[str, set[str]],
     problems: list[str],
 ) -> None:
-    types = inferred_types(text[start:end])
+    segment = text[start:end]
+    types = inferred_types(segment)
     if not types:
         return
+    # Dart 3.2 field promotion: `if (x is Sub) x.method()` is valid even when
+    # `x` is declared as the supertype, so accept members of promoted types.
+    promotions: dict[str, set[str]] = {}
+    for match in re.finditer(r"\b([a-z_]\w*)\s+is\s+([A-Z]\w*)", segment):
+        promotions.setdefault(match.group(1), set()).add(match.group(2))
     line_offset = text.count("\n", 0, start)
-    for local_line, line in enumerate(text[start:end].splitlines(), 1):
+    for local_line, line in enumerate(segment.splitlines(), 1):
         for match in MEMBER_USE_RE.finditer(line):
             receiver, member = match.group(1), match.group(2)
             if receiver in IGNORED_RECEIVERS:
@@ -308,6 +314,11 @@ def check_members(
             if not type_name or type_name in SKIP_TYPES or type_name not in members:
                 continue
             if member in members[type_name] or member in UNIVERSAL:
+                continue
+            if any(
+                member in members.get(promoted, set())
+                for promoted in promotions.get(receiver, set())
+            ):
                 continue
             problems.append(
                 f"{path.relative_to(ROOT)}:{line_offset + local_line}: "

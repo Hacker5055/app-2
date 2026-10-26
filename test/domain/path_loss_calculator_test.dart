@@ -26,7 +26,7 @@ void main() {
     });
 
     test('known dBm values match the spec formula', () {
-      final double expected = 10.0 * 10.0; // 10^((−59 − −109)/25) = 10^2
+      const double expected = 100.0; // 10^((−59 − −109)/25) = 10^2
       expect(calculator.distanceMeters(-109), closeTo(expected, 1e-6));
       expect(calculator.distanceMeters(-84), closeTo(10.0, 1e-6));
       expect(calculator.distanceMeters(-34), closeTo(0.1, 0.005));

@@ -22,7 +22,7 @@ class _DevicePipeline {
   _DevicePipeline({
     required this.id,
     required this.isMock,
-    required this.timestamp,
+    required DateTime timestamp,
     required this.ema,
     required this.name,
     required this.kind,
