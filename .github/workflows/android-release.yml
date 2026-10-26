@@ -45,21 +45,59 @@ jobs:
 
       - name: Analyze (informational)
         continue-on-error: true
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        run: |
+          set -o pipefail
+          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee "$RUNNER_TEMP/analyze.log"
 
       - name: Unit tests (informational)
         continue-on-error: true
-        run: flutter test --reporter expanded
+        run: |
+          set -o pipefail
+          flutter test --reporter expanded 2>&1 | tee "$RUNNER_TEMP/test.log"
 
       - name: Build arm64 release APK
-        run: flutter build apk --release --target-platform android-arm64
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flutter build apk --release --target-platform android-arm64 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      # Failure diagnostics: the delivery bot that maintains this repository
+      # cannot download Actions logs/artifacts, so a failing build publishes its
+      # tail to the `ci-logs` branch (readable through the REST contents API).
+      - name: Publish diagnostics on failure
+        if: steps.build.outcome == 'failure'
+        run: |
+          {
+            echo "### flutter analyze (tail)"
+            tail -n 120 "$RUNNER_TEMP/analyze.log" 2>/dev/null || true
+            echo
+            echo "### flutter test (tail)"
+            tail -n 120 "$RUNNER_TEMP/test.log" 2>/dev/null || true
+            echo
+            echo "### flutter build (tail)"
+            tail -n 400 "$RUNNER_TEMP/build.log" 2>/dev/null || true
+          } > ci-build.log
+          head -c 4000 ci-build.log
+          git config user.name "ci"
+          git config user.email "ci@users.noreply.github.com"
+          git checkout -B ci-logs
+          git add -f ci-build.log
+          git commit -m "ci: build diagnostics $(date -u +%FT%TZ) [skip ci]"
+          git push --force origin ci-logs
+
+      - name: Fail if the APK was not produced
+        if: steps.build.outcome == 'failure'
+        run: exit 1
 
       - name: Verify artifact
+        if: steps.build.outcome == 'success'
         run: |
           ls -lh build/app/outputs/flutter-apk/
           unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -E "lib/.*\.so" || true
 
       - name: Upload APK artifact
+        if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: bluetooth-finder-radar-arm64
@@ -70,7 +108,7 @@ jobs:
       # A rolling, always-downloadable APK for the newest successful build of
       # any branch. Public repos: no login needed to download the asset.
       - name: Publish rolling "apk-latest" release
-        if: always() && success()
+        if: steps.build.outcome == 'success'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
