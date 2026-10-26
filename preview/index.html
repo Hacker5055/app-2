@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#08090E" />
+<title>Bluetooth Finder Radar — interactive preview</title>
+<style>
+  :root {
+    --bg: #08090E;
+    --bg-deep: #05060A;
+    --surface: #0F121C;
+    --surface-high: #141928;
+    --border: #232B3F;
+    --border-bright: #31405E;
+    --text: #EFF4FF;
+    --text-2: #9AA6C2;
+    --text-3: #5D6884;
+    --cyan: #00E5FF;
+    --purple: #B14BFF;
+    --orange: #FF8A1F;
+    --red: #FF3355;
+    --green: #2BFFB0;
+    --amber: #FFC857;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: radial-gradient(1200px 800px at 50% -10%, #12203a 0%, #08090E 45%, #05060A 100%);
+    color: var(--text);
+    font-family: var(--sans);
+    display: grid;
+    place-items: center;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+  .phone {
+    position: relative;
+    width: min(430px, 100vw);
+    height: min(932px, 100dvh);
+    display: flex;
+    flex-direction: column;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(0, 229, 255, 0.10), transparent 60%),
+      radial-gradient(90% 50% at 50% 100%, rgba(177, 75, 255, 0.08), transparent 60%),
+      var(--bg);
+    overflow: hidden;
+  }
+  @media (min-width: 520px) and (min-height: 760px) {
+    .phone {
+      border-radius: 34px;
+      border: 1px solid var(--border);
+      box-shadow: 0 40px 120px rgba(0, 229, 255, 0.12), 0 0 0 1px rgba(255,255,255,0.02), inset 0 0 80px rgba(0,0,0,0.6);
+    }
+  }
+  .grain {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+    background-image:
+      linear-gradient(rgba(0, 229, 255, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 229, 255, 0.045) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(80% 70% at 50% 40%, #000 20%, transparent 85%);
+  }
+  .app { position: relative; display: flex; flex-direction: column; height: 100%; z-index: 1; }
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: calc(12px + env(safe-area-inset-top)) 16px 8px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .mark {
+    width: 38px; height: 38px; border-radius: 12px; flex: none;
+    display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 40%, rgba(0,229,255,0.22), rgba(8,9,14,0.9) 70%);
+    border: 1px solid rgba(0, 229, 255, 0.35);
+    box-shadow: 0 0 24px rgba(0, 229, 255, 0.22);
+  }
+  .mark svg { width: 22px; height: 22px; }
+  .brand h1 { font-size: 14px; margin: 0; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brand p { margin: 2px 0 0; font-family: var(--mono); font-size: 9px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-3); }
+  .head-actions { display: flex; align-items: center; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-2); font-size: 10.5px; font-family: var(--mono); letter-spacing: 0.4px;
+  }
+  .chip.live { color: var(--green); border-color: rgba(43,255,176,0.35); box-shadow: 0 0 18px rgba(43,255,176,0.10); }
+  .chip.demo { color: var(--amber); border-color: rgba(255,200,87,0.35); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; animation: blink 1.6s infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1 } 50% { opacity: 0.25 } }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center;
+    background: var(--surface-high); border: 1px solid var(--border); color: var(--text-2);
+    cursor: pointer; transition: border-color .2s, color .2s, box-shadow .2s;
+  }
+  .icon-btn:hover { color: var(--cyan); border-color: rgba(0,229,255,0.4); box-shadow: 0 0 18px rgba(0,229,255,0.16); }
+  main { flex: 1; min-height: 0; overflow: hidden; position: relative; }
+  .screen { position: absolute; inset: 0; display: none; flex-direction: column; min-height: 0; }
+  .screen.active { display: flex; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .scroll { overflow-y: auto; overflow-x: hidden; padding: 4px 16px 120px; flex: 1; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+  .section-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 1.8px; text-transform: uppercase;
+    color: var(--text-3); margin: 18px 2px 8px;
+  }
+
+  /* radar stage */
+  .radar-stage { position: relative; flex: 1; min-height: 0; }
+  .radar-wrap { position: absolute; inset: 0; display: grid; place-items: center; }
+  canvas.radar { width: 100%; height: 100%; display: block; }
+  .radar-badge {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; align-items: center;
+  }
+  .range-pill {
+    font-family: var(--mono); font-size: 10px; color: var(--text-2); letter-spacing: 0.8px;
+    border: 1px solid var(--border); background: rgba(15, 18, 28, 0.85); border-radius: 999px; padding: 6px 12px;
+    cursor: pointer; backdrop-filter: blur(8px);
+  }
+  .range-pill b { color: var(--cyan); }
+  .radar-caption {
+    position: absolute; left: 0; right: 0; bottom: 6px; text-align: center;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 1.6px; color: var(--text-3); text-transform: uppercase;
+  }
+
+  /* device cards */
+  .card {
+    display: flex; align-items: center; gap: 12px; padding: 12px 13px; margin-bottom: 9px;
+    background: linear-gradient(180deg, rgba(20,25,40,0.92), rgba(15,18,28,0.92));
+    border: 1px solid var(--border); border-radius: 16px; cursor: pointer;
+    transition: border-color .2s, transform .15s, box-shadow .2s;
+    position: relative; overflow: hidden;
+  }
+  .card:active { transform: scale(0.99); }
+  .card:hover { border-color: var(--border-bright); }
+  .card .accent { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; opacity: .9; }
+  .glyph {
+    width: 42px; height: 42px; border-radius: 13px; flex: none; display: grid; place-items: center;
+    background: var(--surface-high); border: 1px solid var(--border);
+  }
+  .glyph svg { width: 21px; height: 21px; }
+  .card-body { flex: 1; min-width: 0; }
+  .card-title { display: flex; align-items: center; gap: 8px; }
+  .card-title strong { font-size: 13.5px; font-weight: 650; letter-spacing: -0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-sub { display: flex; align-items: center; gap: 8px; margin-top: 3px; font-family: var(--mono); font-size: 10px; color: var(--text-3); }
+  .tag {
+    font-size: 8.5px; font-family: var(--mono); letter-spacing: 0.8px; padding: 2px 6px; border-radius: 6px;
+    border: 1px solid currentColor; opacity: 0.9; flex: none;
+  }
+  .card-right { text-align: right; flex: none; }
+  .metric { font-family: var(--mono); font-size: 15px; font-weight: 700; letter-spacing: -0.4px; }
+  .metric small { font-size: 9px; color: var(--text-3); font-weight: 400; margin-left: 3px; }
+  .bars { display: flex; align-items: flex-end; gap: 2px; height: 13px; justify-content: flex-end; margin-top: 5px; }
+  .bars i { width: 3px; border-radius: 1px; background: var(--border-bright); }
+  .bars i.on { background: currentColor; box-shadow: 0 0 8px currentColor; }
+  .bars i:nth-child(1) { height: 4px } .bars i:nth-child(2) { height: 7px }
+  .bars i:nth-child(3) { height: 10px } .bars i:nth-child(4) { height: 13px }
+
+  /* filters */
+  .filter-row { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter {
+    flex: none; padding: 8px 13px; border-radius: 999px; font-size: 11.5px; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-2);
+    transition: all .18s;
+  }
+  .filter.on { color: #041418; background: linear-gradient(180deg, #5CF6FF, #00B8D4); border-color: transparent; font-weight: 650; box-shadow: 0 0 20px rgba(0,229,255,0.25); }
+  .search {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-3);
+  }
+  .search input { flex: 1; background: none; border: 0; outline: 0; color: var(--text); font-size: 13px; font-family: var(--sans); }
+  .search input::placeholder { color: var(--text-3); }
+
+  /* detail sheet */
+  .sheet {
+    position: absolute; inset: 0; background: var(--bg); z-index: 30;
+    display: none; flex-direction: column;
+    background-image: radial-gradient(120% 50% at 50% 0%, rgba(0,229,255,0.10), transparent 55%);
+  }
+  .sheet.active { display: flex; animation: rise .28s cubic-bezier(.2,.8,.2,1); }
+  @keyframes rise { from { transform: translateY(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+  .sheet-head { display: flex; align-items: center; gap: 10px; padding: calc(10px + env(safe-area-inset-top)) 14px 4px; }
+  .sheet-head h2 { margin: 0; font-size: 15px; letter-spacing: -0.2px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .readout { text-align: center; padding: 2px 20px 6px; }
+  .readout .value { font-family: var(--mono); font-size: clamp(38px, 11vw, 54px); font-weight: 700; letter-spacing: -2px; line-height: 1.05; }
+  .readout .value small { font-size: 16px; letter-spacing: 0; color: var(--text-2); font-weight: 500; margin-left: 6px; }
+  .readout .caption { margin-top: 4px; font-family: var(--mono); font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-3); }
+  .zone-line { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; font-size: 11px; }
+  .zone-line .pill { border: 1px solid currentColor; border-radius: 999px; padding: 4px 10px; font-family: var(--mono); font-size: 10px; letter-spacing: .6px; }
+  .detail-scroll { overflow-y: auto; padding: 0 16px calc(100px + env(safe-area-inset-bottom)); scrollbar-width: none; }
+  .detail-scroll::-webkit-scrollbar { display: none; }
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px 10px 9px; text-align: center;
+  }
+  .stat .k { font-family: var(--mono); font-size: 8px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-3); }
+  .stat .v { font-family: var(--mono); font-size: 15px; font-weight: 700; margin-top: 4px; }
+  .spark { width: 100%; height: 74px; display: block; border-radius: 12px; background: rgba(15,18,28,0.6); border: 1px solid var(--border); }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 12px; }
+  .actions .wide { grid-column: span 2; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    height: 48px; border-radius: 14px; border: 1px solid transparent; cursor: pointer;
+    font-size: 13px; font-weight: 650; font-family: var(--sans); letter-spacing: .1px;
+    transition: transform .15s, filter .2s, box-shadow .2s;
+  }
+  .btn:active { transform: scale(0.985); }
+  .btn.primary { background: linear-gradient(180deg, #5CF6FF, #00B8D4); color: #02181D; box-shadow: 0 0 26px rgba(0,229,255,0.28); }
+  .btn.purple { background: linear-gradient(180deg, #B14BFF, #6E2BD9); color: #fff; box-shadow: 0 0 26px rgba(177,75,255,0.28); }
+  .btn.ghost { background: var(--surface-high); border-color: var(--border); color: var(--text-2); }
+  .btn.success { background: linear-gradient(180deg, #66FFC9, #00C98A); color: #00231A; box-shadow: 0 0 26px rgba(43,255,176,0.26); }
+  .btn svg { width: 16px; height: 16px; }
+
+  /* settings */
+  .row {
+    display: flex; align-items: center; gap: 12px; padding: 13px 2px;
+    border-bottom: 1px solid rgba(35,43,63,0.6);
+  }
+  .row:last-child { border-bottom: 0; }
+  .row .label { flex: 1; font-size: 13px; }
+  .row .hint { font-size: 10.5px; color: var(--text-3); margin-top: 2px; }
+  .switch { width: 44px; height: 26px; border-radius: 999px; background: var(--surface-high); border: 1px solid var(--border); position: relative; cursor: pointer; transition: all .2s; flex: none; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--text-3); transition: all .2s; }
+  .switch.on { background: rgba(0,229,255,0.18); border-color: rgba(0,229,255,0.5); box-shadow: 0 0 18px rgba(0,229,255,0.18); }
+  .switch.on::after { left: 21px; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+  .seg { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 3px; gap: 3px; }
+  .seg button { border: 0; background: none; color: var(--text-2); font-size: 11.5px; padding: 6px 10px; border-radius: 9px; cursor: pointer; font-family: var(--sans); }
+  .seg button.on { background: var(--surface-high); color: var(--cyan); box-shadow: inset 0 0 0 1px rgba(0,229,255,0.25); }
+  input[type="range"] { -webkit-appearance: none; width: 128px; height: 3px; border-radius: 3px; background: var(--border-bright); outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px rgba(0,229,255,0.6); cursor: pointer; }
+  .slider-row { display: flex; flex-direction: column; gap: 8px; padding: 12px 2px; border-bottom: 1px solid rgba(35,43,63,0.6); }
+  .slider-row .top { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
+  .slider-row .top b { font-family: var(--mono); font-size: 12px; color: var(--cyan); font-weight: 600; }
+  .slider-row .bottom { display: flex; align-items: center; gap: 10px; }
+  .slider-row .bottom span { font-family: var(--mono); font-size: 9px; color: var(--text-3); }
+
+  /* tabs */
+  nav {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 8px 14px calc(8px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(8,9,14,0), rgba(8,9,14,0.92) 35%, #08090E 100%);
+    backdrop-filter: blur(6px);
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 6px 16px; border-radius: 12px; border: 0; background: none; cursor: pointer;
+    color: var(--text-3); font-size: 9.5px; font-family: var(--mono); letter-spacing: 0.6px; text-transform: uppercase;
+    transition: color .2s;
+  }
+  .tab svg { width: 20px; height: 20px; }
+  .tab.active { color: var(--cyan); }
+  .tab.active svg { filter: drop-shadow(0 0 8px rgba(0,229,255,0.7)); }
+
+  /* sweep overlay */
+  .overlay {
+    position: absolute; inset: 0; z-index: 40; display: none; flex-direction: column;
+    background: rgba(5,6,10,0.96); backdrop-filter: blur(14px);
+    padding: calc(14px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));
+  }
+  .overlay.active { display: flex; animation: fade .2s ease; }
+  .overlay h3 { margin: 0; font-size: 16px; }
+  .overlay p { color: var(--text-2); font-size: 12px; line-height: 1.6; margin: 6px 0 0; }
+  .dial-wrap { flex: 1; min-height: 0; display: grid; place-items: center; }
+  canvas.dial { width: 100%; height: 100%; max-height: 340px; }
+
+  /* found dialog + confetti */
+  canvas.confetti { position: absolute; inset: 0; z-index: 45; pointer-events: none; }
+  .found {
+    position: absolute; inset: 0; z-index: 50; display: none; place-items: center;
+    background: rgba(5,6,10,0.72); backdrop-filter: blur(8px); padding: 24px; text-align: center;
+  }
+  .found.active { display: grid; animation: fade .25s ease; }
+  .found .inner {
+    background: linear-gradient(180deg, rgba(20,25,40,0.98), rgba(10,12,20,0.98));
+    border: 1px solid rgba(43,255,176,0.35); border-radius: 24px; padding: 28px 24px;
+    box-shadow: 0 0 60px rgba(43,255,176,0.18); max-width: 320px;
+  }
+  .found .ring {
+    width: 66px; height: 66px; border-radius: 50%; margin: 0 auto 14px; display: grid; place-items: center;
+    background: radial-gradient(circle, rgba(43,255,176,0.3), transparent 70%);
+    border: 1px solid rgba(43,255,176,0.6); color: var(--green);
+  }
+  .found h3 { margin: 0 0 6px; font-size: 19px; }
+  .found p { margin: 0 0 18px; color: var(--text-2); font-size: 12.5px; line-height: 1.6; }
+  .toast {
+    position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(10px);
+    background: var(--surface-high); border: 1px solid var(--border-bright); color: var(--text);
+    padding: 10px 16px; border-radius: 999px; font-size: 11.5px; z-index: 60; opacity: 0;
+    transition: all .25s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .mono { font-family: var(--mono); }
+  .muted { color: var(--text-3); }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <div class="grain"></div>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#00E5FF" stroke-width="1.6">
+            <circle cx="12" cy="12" r="9" opacity=".45"/>
+            <circle cx="12" cy="12" r="5.5" opacity=".7"/>
+            <circle cx="12" cy="12" r="1.4" fill="#00E5FF" stroke="none"/>
+            <path d="M12 3v3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div style="min-width:0">
+          <h1 id="app-name">Bluetooth Finder Radar</h1>
+          <p id="app-sub">LIVE BLE PROXIMITY · v1.0.0</p>
+        </div>
+      </div>
+      <div class="head-actions">
+        <div class="chip demo" id="mode-chip"><span class="dot"></span> DEMO</div>
+        <button class="icon-btn" id="lang-btn" title="Language">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7">
+            <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="screen" id="screen-devices">
+        <div class="scroll">
+          <div class="search">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+            </svg>
+            <input id="search-input" placeholder="Search name or MAC / UUID" autocomplete="off" />
+          </div>
+          <div class="section-label" id="lbl-filter">Filter by type</div>
+          <div class="filter-row" id="filters"></div>
+          <div class="section-label" id="lbl-nearby">Nearby devices</div>
+          <div id="device-list"></div>
+        </div>
+      </section>
+
+      <section class="screen active" id="screen-radar">
+        <div class="radar-stage">
+          <div class="radar-badge">
+            <div class="range-pill" id="range-pill">RANGE <b>20 m</b></div>
+            <div class="chip live" id="scan-chip"><span class="dot"></span> SCANNING</div>
+          </div>
+          <div class="radar-wrap"><canvas class="radar" id="radar"></canvas></div>
+          <div class="radar-caption" id="radar-caption">TAP A NODE TO TRACK · SWEEP 4 s</div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-settings">
+        <div class="scroll">
+          <div class="section-label" id="lbl-data">Data source</div>
+          <div class="row">
+            <div class="label"><div id="lbl-mock">Mock BLE data</div><div class="hint" id="hint-mock">8 scripted devices — works without hardware</div></div>
+            <div class="switch on" id="sw-mock"></div>
+          </div>
+          <div class="row">
+            <div class="label"><div id="lbl-sound">Geiger ping sound</div><div class="hint" id="hint-sound">Frequency rises as you get closer</div></div>
+            <div class="switch on" id="sw-sound"></div>
+          </div>
+          <div class="row">
+            <div class="label"><div id="lbl-haptics">Haptic ticks</div><div class="hint" id="hint-haptics">Vibration on supported devices</div></div>
+            <div class="switch on" id="sw-haptics"></div>
+          </div>
+
+          <div class="section-label" id="lbl-units">Distance units</div>
+          <div class="row">
+            <div class="label" id="lbl-unit">Measurement system</div>
+            <div class="seg" id="unit-seg">
+              <button data-unit="m" class="on">METRIC</button>
+              <button data-unit="ft">IMPERIAL</button>
+            </div>
+          </div>
+
+          <div class="section-label" id="lbl-calib">Calibration</div>
+          <div class="slider-row">
+            <div class="top"><span id="lbl-tx">TxPower @ 1 m</span><b id="val-tx">−59 dBm</b></div>
+            <div class="bottom"><span>−90</span><input type="range" id="tx-range" min="-90" max="-35" step="1" value="-59" /><span>−35</span></div>
+          </div>
+          <div class="slider-row">
+            <div class="top"><span id="lbl-n">Path-loss exponent n</span><b id="val-n">2.5</b></div>
+            <div class="bottom"><span>1.5</span><input type="range" id="n-range" min="1.5" max="4.5" step="0.1" value="2.5" /><span>4.5</span></div>
+          </div>
+          <div class="slider-row">
+            <div class="top"><span id="lbl-range">Radar range</span><b id="val-range">20 m</b></div>
+            <div class="bottom"><span>5</span><input type="range" id="range-range" min="5" max="50" step="5" value="20" /><span>50</span></div>
+          </div>
+
+          <div class="section-label" id="lbl-about">About</div>
+          <div class="row">
+            <div class="label"><div id="lbl-about-app">Bluetooth Finder Radar</div><div class="hint" id="hint-about">Flutter · flutter_blue_plus 1.35.6 · arm64 release</div></div>
+            <div class="chip mono" id="version-chip">v1.0.0</div>
+          </div>
+        </div>
+      </section>
+
+      <nav>
+        <button class="tab" data-screen="devices">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg>
+          <span id="tab-devices">Devices</span>
+        </button>
+        <button class="tab active" data-screen="radar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12 18 8" stroke-linecap="round"/></svg>
+          <span id="tab-radar">Radar</span>
+        </button>
+        <button class="tab" data-screen="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+          <span id="tab-settings">Settings</span>
+        </button>
+      </nav>
+
+      <!-- device detail -->
+      <div class="sheet" id="detail">
+        <div class="sheet-head">
+          <button class="icon-btn" id="detail-back" aria-label="Back">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M15 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <h2 id="detail-title">Device</h2>
+          <div class="chip mono" id="detail-id">—</div>
+        </div>
+        <div class="readout">
+          <div class="value" id="detail-distance">0.00<small id="detail-unit">m</small></div>
+          <div class="caption" id="detail-away">METERS AWAY</div>
+          <div class="zone-line">
+            <span class="pill" id="detail-zone">CLOSE</span>
+            <span class="mono muted" id="detail-rssi">−60 dBm</span>
+          </div>
+        </div>
+        <div class="detail-scroll">
+          <div class="radar-stage" style="height:270px;flex:none">
+            <div class="radar-wrap"><canvas class="radar" id="detail-radar"></canvas></div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat"><div class="k" id="k-bars">Signal</div><div class="v" id="v-bars">▮▮▮▯</div></div>
+            <div class="stat"><div class="k" id="k-trend">Trend</div><div class="v" id="v-trend">→</div></div>
+            <div class="stat"><div class="k" id="k-ping">Ping</div><div class="v" id="v-ping">380 ms</div></div>
+          </div>
+          <div class="section-label" id="lbl-spark">RSSI history</div>
+          <canvas class="spark" id="spark"></canvas>
+          <div class="actions">
+            <button class="btn ghost" id="btn-sweep">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg>
+              <span id="btn-sweep-label">Sweep 360°</span>
+            </button>
+            <button class="btn ghost" id="btn-sound">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+              <span id="btn-sound-label">Play Sound</span>
+            </button>
+            <button class="btn success wide" id="btn-found">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 13 4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span id="btn-found-label">Mark as Found</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- sweep assistant -->
+      <div class="overlay" id="sweep">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="icon-btn" id="sweep-close" aria-label="Close">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 6l12 12M18 6 6 18" stroke-linecap="round"/></svg>
+          </button>
+          <h3 id="sweep-title">360° Sweep Assistant</h3>
+        </div>
+        <p id="sweep-body">Slowly turn around. The radar samples the signal at every heading and locks on to the strongest direction.</p>
+        <div class="dial-wrap"><canvas class="dial" id="dial"></canvas></div>
+        <div class="readout" style="padding:0 0 10px">
+          <div class="value" id="sweep-heading" style="font-size:40px">—</div>
+          <div class="caption" id="sweep-caption">COVERAGE 0° / 360°</div>
+        </div>
+        <div class="actions" style="margin-top:0;grid-template-columns:1fr 1fr">
+          <button class="btn ghost" id="sweep-replay"><span id="sweep-replay-label">Replay</span></button>
+          <button class="btn primary" id="sweep-lock"><span id="sweep-lock-label">Lock bearing</span></button>
+        </div>
+      </div>
+
+      <canvas class="confetti" id="confetti"></canvas>
+      <div class="found" id="found">
+        <div class="inner">
+          <div class="ring">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 13 4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3 id="found-title">Found it!</h3>
+          <p id="found-body">Device marked as found. The radar will keep watching in case it reappears.</p>
+          <button class="btn primary" id="found-ok" style="width:100%"><span id="found-ok-label">Back to radar</span></button>
+        </div>
+      </div>
+      <div class="toast" id="toast"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------------------------------------------------------------------------
+  // Strings
+  // ---------------------------------------------------------------------------
+  const STR = {
+    en: {
+      dir: 'ltr',
+      appName: 'Bluetooth Finder Radar',
+      appSub: 'LIVE BLE PROXIMITY · v1.0.0',
+      demo: 'DEMO', range: 'RANGE', scanning: 'SCANNING',
+      filterLabel: 'Filter by type', nearby: 'Nearby devices',
+      filters: { all: 'All', earbuds: 'Earbuds', watch: 'Watches', tracker: 'Trackers', unknown: 'Unknown' },
+      tabs: { devices: 'Devices', radar: 'Radar', settings: 'Settings' },
+      search: 'Search name or MAC / UUID',
+      radarCaption: 'TAP A NODE TO TRACK · SWEEP 4 s',
+      settings: {
+        data: 'Data source', mock: 'Mock BLE data', mockHint: '8 scripted devices — works without hardware',
+        sound: 'Geiger ping sound', soundHint: 'Frequency rises as you get closer',
+        haptics: 'Haptic ticks', hapticsHint: 'Vibration on supported devices',
+        units: 'Distance units', unit: 'Measurement system', metric: 'METRIC', imperial: 'IMPERIAL',
+        calib: 'Calibration', tx: 'TxPower @ 1 m', n: 'Path-loss exponent n', range: 'Radar range',
+        about: 'About', aboutApp: 'Bluetooth Finder Radar', aboutHint: 'Flutter · flutter_blue_plus 1.35.6 · arm64 release'
+      },
+      detail: {
+        back: 'Back', away: 'METERS AWAY', awayFt: 'FEET AWAY', signal: 'Signal', trend: 'Trend', ping: 'Ping',
+        spark: 'RSSI history', sweep: 'Sweep 360°', sound: 'Play Sound', found: 'Mark as Found'
+      },
+      found: {
+        title: 'Found it!', body: 'Device marked as found. The radar keeps watching in case it reappears.',
+        ok: 'Back to radar'
+      },
+      sweep: {
+        title: '360° Sweep Assistant',
+        body: 'Slowly turn around. The radar samples the signal at every heading and locks on to the strongest direction.',
+        replay: 'Replay', lock: 'Lock bearing', locking: 'LOCKING', coverage: 'COVERAGE'
+      },
+      zones: { hot: 'IMMEDIATE', warm: 'CLOSE', moderate: 'MODERATE', cold: 'FAR' },
+      toast: { mock: 'Mock mode is always on in this preview', found: 'Marked as found', bearing: 'Bearing locked' }
+    },
+    ar: {
+      dir: 'rtl',
+      appName: 'رادار الأجهزة المفقودة',
+      appSub: 'تتبع بلوتوث مباشر · الإصدار 1.0.0',
+      demo: 'تجريبي', range: 'المدى', scanning: 'جارٍ المسح',
+      filterLabel: 'تصفية حسب النوع', nearby: 'الأجهزة القريبة',
+      filters: { all: 'الكل', earbuds: 'سماعات', watch: 'ساعات', tracker: 'متعقبات', unknown: 'غير معروف' },
+      tabs: { devices: 'الأجهزة', radar: 'الرادار', settings: 'الإعدادات' },
+      search: 'ابحث بالاسم أو العنوان',
+      radarCaption: 'اضغط على جهاز لتتبعه · دورة كل 4 ثوانٍ',
+      settings: {
+        data: 'مصدر البيانات', mock: 'بيانات تجريبية', mockHint: 'ثمانية أجهزة وهمية — تعمل بدون بلوتوث',
+        sound: 'صوت الرادار', soundHint: 'يزداد التكرار كلما اقتربت',
+        haptics: 'اهتزاز', hapticsHint: 'اهتزاز عند دعم الجهاز',
+        units: 'وحدات القياس', unit: 'نظام القياس', metric: 'متري', imperial: 'إمبراطوري',
+        calib: 'المعايرة', tx: 'قوة الإرسال عند متر واحد', n: 'معامل فقدان المسار n', range: 'مدى الرادار',
+        about: 'حول التطبيق', aboutApp: 'رادار الأجهزة المفقودة', aboutHint: 'Flutter · flutter_blue_plus 1.35.6 · arm64'
+      },
+      detail: {
+        back: 'رجوع', away: 'متر بعيدًا', awayFt: 'قدم بعيدًا', signal: 'الإشارة', trend: 'الاتجاه', ping: 'النقر',
+        spark: 'سجل الإشارة', sweep: 'مسح 360°', sound: 'تشغيل صوت', found: 'تم العثور عليه'
+      },
+      found: {
+        title: 'تم إيجاده!', body: 'تم تعليم الجهاز كمفقود سابقًا. يبقى الرادار يراقب في حال عاد للظهور.',
+        ok: 'العودة إلى الرادار'
+      },
+      sweep: {
+        title: 'مساعد المسح 360°',
+        body: 'استدر ببطء. يأخذ الرادار عينات عند كل اتجاه ثم يثبّت أقوى إشارة.',
+        replay: 'إعادة', lock: 'تثبيت الاتجاه', locking: 'جارٍ التثبيت', coverage: 'التغطية'
+      },
+      zones: { hot: 'قريب جدًا', warm: 'قريب', moderate: 'متوسط', cold: 'بعيد' },
+      toast: { mock: 'الوضع التجريبي مفعّل دائمًا في المعاينة', found: 'تم تعليمه كمفقود', bearing: 'تم تثبيت الاتجاه' }
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Physics (mirrors lib/domain/signal)
+  // ---------------------------------------------------------------------------
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const EMA_ALPHA = 0.35;
+  const INNER_FRACTION = 0.055;
+
+  const zoneFor = (meters) => {
+    if (!Number.isFinite(meters) || meters < 0) return 'hot';
+    if (meters < 1) return 'hot';
+    if (meters < 3) return 'warm';
+    if (meters < 10) return 'moderate';
+    return 'cold';
+  };
+  const ZONE_META = {
+    hot: { color: '#FF3355', ping: 130 },
+    warm: { color: '#FF8A1F', ping: 380 },
+    moderate: { color: '#B14BFF', ping: 800 },
+    cold: { color: '#00E5FF', ping: 1600 }
+  };
+  const distanceFor = (rssi, txPower, n) =>
+    clamp(Math.pow(10, (txPower - clamp(rssi, -127, -20)) / (10 * n)), 0.05, 200);
+
+  const pingInterval = (meters, range) => {
+    const u = clamp(Math.abs(meters) / (range || 20), 0, 1);
+    return Math.round(130 + (1600 - 130) * Math.pow(u, 0.65));
+  };
+
+  const zoneColor = (z) => ZONE_META[z].color;
+
+  const hashAngle = (id) => {
+    let h = 0x811C9DC5;
+    for (let i = 0; i < id.length; i++) {
+      h ^= id.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return ((h % 3600) / 3600) * Math.PI * 2;
+  };
+
+  const gauss = () => {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  };
+
+  const shortId = (id) => {
+    const clean = id.replace(/[:\\-]/g, '').toUpperCase();
+    return clean.length <= 8 ? clean : clean.slice(-8);
+  };
+
+  // ---------------------------------------------------------------------------
+  // Devices
+  // ---------------------------------------------------------------------------
+  const DEVICES = [
+    { id: 'mock:airpods-pro-2', name: 'AirPods Pro', kind: 'earbuds', tx: -58, base: 0.7, amp: 0.45, speed: 0.42, phase: 0.3, alert: false },
+    { id: 'mock:galaxy-watch-6', name: 'Galaxy Watch6', kind: 'watch', tx: -61, base: 2.4, amp: 0.9, speed: 0.31, phase: 1.7, alert: false },
+    { id: 'mock:smarttag-2', name: 'Galaxy SmartTag2', kind: 'tracker', tx: -60, base: 4.2, amp: 1.6, speed: 0.27, phase: 3.1, alert: true },
+    { id: 'mock:airtag', name: 'AirTag', kind: 'tracker', tx: -62, base: 7.5, amp: 2.2, speed: 0.22, phase: 0.9, alert: false },
+    { id: 'mock:mi-band-8', name: 'Mi Band 8', kind: 'watch', tx: -63, base: 11.5, amp: 3.1, speed: 0.19, phase: 4.4, alert: false },
+    { id: 'mock:tile-mate', name: 'Tile Mate', kind: 'tracker', tx: -64, base: 15.5, amp: 4.0, speed: 0.17, phase: 2.2, alert: false },
+    { id: 'mock:wh-1000xm5', name: 'Sony WH-1000XM5', kind: 'earbuds', tx: -59, base: 6.4, amp: 1.4, speed: 0.33, phase: 5.2, alert: false },
+    { id: 'mock:beacon-19a4', name: '', kind: 'unknown', tx: -66, base: 18.0, amp: 5.0, speed: 0.14, phase: 1.1, alert: false }
+  ].map((d) => ({
+    ...d,
+    distance: d.base,
+    ema: null,
+    rssi: -70,
+    history: [],
+    angle: hashAngle(d.id),
+    lockedBearing: null
+  }));
+
+  const STATE = {
+    lang: 'en',
+    screen: 'radar',
+    unit: 'm',
+    sound: true,
+    haptics: true,
+    mock: true,
+    txPower: -59,
+    pathLoss: 2.5,
+    range: 20,
+    filter: 'all',
+    query: '',
+    detailId: null,
+    sweep: null,
+    foundId: null
+  };
+  const t = () => STR[STATE.lang];
+  const zoneLabel = (z) => t().zones[z];
+
+  const activeDevice = () => DEVICES.find((d) => d.id === STATE.detailId) || null;
+
+  // ---------------------------------------------------------------------------
+  // Simulation
+  // ---------------------------------------------------------------------------
+  function simulate(dt) {
+    const now = performance.now() / 1000;
+    for (const d of DEVICES) {
+      const target = clamp(
+        d.base +
+          Math.sin(now * d.speed + d.phase) * d.amp +
+          Math.sin(now * d.speed * 2.7 + d.phase * 1.3) * d.amp * 0.32 +
+          gauss() * 0.03,
+        0.3,
+        24
+      );
+      d.distance = target;
+      const rssi = d.tx - 10 * STATE.pathLoss * Math.log10(Math.max(target, 0.1)) + gauss() * 1.6;
+      d.rssi = clamp(rssi, -100, -28);
+      d.ema = d.ema === null ? d.rssi : EMA_ALPHA * d.rssi + (1 - EMA_ALPHA) * d.ema;
+      d.history.push(d.ema);
+      if (d.history.length > 48) d.history.shift();
+    }
+  }
+  const distanceOf = (d) => distanceFor(d.ema ?? d.rssi, STATE.txPower, STATE.pathLoss);
+
+  // ---------------------------------------------------------------------------
+  // Audio (WebAudio, created on first gesture)
+  // ---------------------------------------------------------------------------
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) audioCtx = new Ctx();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function beep(freq = 1400, duration = 0.07, gainValue = 0.05, type = 'sine') {
+    const ctx = ensureAudio();
+    if (!ctx || !STATE.sound) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(gainValue, ctx.currentTime + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration + 0.02);
+  }
+  function chime() {
+    const ctx = ensureAudio();
+    if (ctx) [880, 1108, 1318, 1760].forEach((f, i) => setTimeout(() => beep(f, 0.5, 0.045, 'triangle'), i * 110));
+  }
+  function vibrate(ms = 12) {
+    if (STATE.haptics && navigator.vibrate) navigator.vibrate(ms);
+  }
+
+  // ping scheduler for the open detail sheet
+  let pingTimer = null;
+  let lastPingAt = 0;
+  function schedulePing() {
+    clearTimeout(pingTimer);
+    const device = activeDevice();
+    if (!device || document.hidden) return;
+    const distance = distanceOf(device);
+    const interval = pingInterval(distance, STATE.range);
+    const wait = Math.max(60, interval - (performance.now() - lastPingAt));
+    pingTimer = setTimeout(() => {
+      const active = activeDevice();
+      if (!active) return;
+      lastPingAt = performance.now();
+      const dd = distanceOf(active);
+      const z = zoneFor(dd);
+      const freq = z === 'hot' ? 1850 : z === 'warm' ? 1480 : 1175;
+      beep(freq, z === 'hot' ? 0.09 : 0.12, 0.03 + 0.05 * (1 - clamp(dd / STATE.range, 0, 1)));
+      vibrate(z === 'hot' ? 26 : 12);
+      schedulePing();
+    }, wait);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Canvas helpers
+  // ---------------------------------------------------------------------------
+  function fitCanvas(canvas) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(1, Math.round(rect.width * dpr));
+    const h = Math.max(1, Math.round(rect.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    return { w, h, dpr, cssW: rect.width, cssH: rect.height };
+  }
+
+  function drawRadar(canvas, time, options = {}) {
+    const { w, h, dpr, cssW, cssH } = fitCanvas(canvas);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    const cx = cssW / 2;
+    const cy = cssH / 2;
+    const radius = Math.max(40, Math.min(cssW, cssH) / 2 - 20);
+    const range = options.range || STATE.range;
+    const focus = options.focus || null;
+
+    // backdrop
+    const bg = ctx.createRadialGradient(cx, cy, radius * 0.05, cx, cy, radius * 1.06);
+    bg.addColorStop(0, 'rgba(0, 229, 255, 0.10)');
+    bg.addColorStop(0.45, 'rgba(6, 12, 22, 0.55)');
+    bg.addColorStop(1, 'rgba(5, 6, 10, 0)');
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 1.06, 0, Math.PI * 2);
+    ctx.fill();
+
+    // rings
+    for (let i = 1; i <= 4; i++) {
+      const r = (radius * i) / 4;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = i === 4 ? 'rgba(0, 229, 255, 0.42)' : 'rgba(0, 229, 255, 0.16)';
+      ctx.lineWidth = i === 4 ? 1.4 : 1;
+      ctx.stroke();
+    }
+
+    // crosshair + ticks
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.10)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - radius, cy); ctx.lineTo(cx + radius, cy);
+    ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy + radius);
+    ctx.stroke();
+
+    for (let deg = 0; deg < 360; deg += 5) {
+      const a = (deg * Math.PI) / 180;
+      const major = deg % 30 === 0;
+      const inner = radius * (major ? 0.94 : 0.965);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+      ctx.lineTo(cx + Math.cos(a) * radius * 1.005, cy + Math.sin(a) * radius * 1.005);
+      ctx.strokeStyle = major ? 'rgba(0, 229, 255, 0.4)' : 'rgba(0, 229, 255, 0.14)';
+      ctx.lineWidth = major ? 1.2 : 0.8;
+      ctx.stroke();
+    }
+
+    // pulse ring
+    const pulse = (time % 2.6) / 2.6;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * (0.08 + pulse * 0.92), 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(0, 229, 255, ${0.28 * (1 - pulse)})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // rotating sweep
+    const sweepAngle = ((time % 4) / 4) * Math.PI * 2 - Math.PI / 2;
+    const tail = (58 * Math.PI) / 180;
+    const sweepGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+    sweepGradient.addColorStop(0, 'rgba(0, 229, 255, 0.30)');
+    sweepGradient.addColorStop(1, 'rgba(0, 229, 255, 0.03)');
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, sweepAngle - tail, sweepAngle);
+    ctx.closePath();
+    ctx.fillStyle = sweepGradient;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(sweepAngle) * radius, cy + Math.sin(sweepAngle) * radius);
+    ctx.strokeStyle = 'rgba(140, 250, 255, 0.85)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    const flare = ctx.createRadialGradient(
+      cx + Math.cos(sweepAngle) * radius, cy + Math.sin(sweepAngle) * radius, 0,
+      cx + Math.cos(sweepAngle) * radius, cy + Math.sin(sweepAngle) * radius, 14
+    );
+    flare.addColorStop(0, 'rgba(180, 255, 255, 0.85)');
+    flare.addColorStop(1, 'rgba(0, 229, 255, 0)');
+    ctx.fillStyle = flare;
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(sweepAngle) * radius, cy + Math.sin(sweepAngle) * radius, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    // centre
+    const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, 16);
+    core.addColorStop(0, 'rgba(0, 229, 255, 0.9)');
+    core.addColorStop(1, 'rgba(0, 229, 255, 0)');
+    ctx.fillStyle = core;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+    ctx.fill();
+
+    // nodes
+    const visible = DEVICES.filter((d) => !options.focusId || d.id === options.focusId || !focus);
+    for (const d of visible) {
+      const distance = distanceOf(d);
+      if (distance > range && d.id !== options.focusId) continue;
+      const fraction = INNER_FRACTION + (1 - INNER_FRACTION) * clamp(distance / range, 0, 1);
+      const r = radius * fraction;
+      const angle = d.lockedBearing !== null ? d.lockedBearing : d.angle;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      const zone = zoneFor(distance);
+      const color = zoneColor(zone);
+      const isFocus = d.id === options.focusId;
+      const isSelected = d.id === STATE.detailId;
+      const breathe = 1 + Math.sin(time * 3 + d.phase) * 0.12;
+
+      // halo
+      const halo = ctx.createRadialGradient(x, y, 0, x, y, 26 * breathe);
+      halo.addColorStop(0, hexToRgba(color, isFocus ? 0.55 : 0.35));
+      halo.addColorStop(1, hexToRgba(color, 0));
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(x, y, 26 * breathe, 0, Math.PI * 2);
+      ctx.fill();
+
+      // core
+      ctx.beginPath();
+      ctx.arc(x, y, isFocus ? 7 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = isFocus ? 22 : 12;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      if (isSelected) {
+        ctx.beginPath();
+        ctx.arc(x, y, 13 + Math.sin(time * 4) * 2, 0, Math.PI * 2);
+        ctx.strokeStyle = hexToRgba(color, 0.85);
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+
+      // label
+      const label = d.name || (STATE.lang === 'ar' ? 'غير معروف' : 'Unknown');
+      ctx.font = `600 10px ${getComputedStyle(document.body).fontFamily}`;
+      const textWidth = ctx.measureText(label).width;
+      const labelX = clamp(x, 46, cssW - textWidth - 10);
+      const labelY = y < cy ? y + 22 : y - 16;
+      ctx.fillStyle = 'rgba(8, 9, 14, 0.72)';
+      ctx.fillRect(labelX - 4, labelY - 9, textWidth + 8, 13);
+      ctx.fillStyle = isFocus ? '#EFF4FF' : 'rgba(239, 244, 255, 0.72)';
+      ctx.fillText(label, labelX, labelY);
+    }
+
+    // range label
+    ctx.font = '500 9px ui-monospace, Menlo, Consolas, monospace';
+    ctx.fillStyle = 'rgba(154, 166, 194, 0.55)';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${range} m`, cx, cy - radius + 10);
+    ctx.textAlign = 'start';
+  }
+
+  function hexToRgba(hex, alpha) {
+    const value = hex.replace('#', '');
+    const r = parseInt(value.slice(0, 2), 16);
+    const g = parseInt(value.slice(2, 4), 16);
+    const b = parseInt(value.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  function drawSparkline(canvas, device) {
+    if (!canvas || !device) return;
+    const { dpr, cssW, cssH } = fitCanvas(canvas);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+    const samples = device.history.slice(-40);
+    if (samples.length < 2) return;
+    const min = Math.min(...samples) - 2;
+    const max = Math.max(...samples) + 2;
+    const span = Math.max(1, max - min);
+    const x = (i) => 8 + (i / (samples.length - 1)) * (cssW - 16);
+    const y = (v) => 8 + (1 - (v - min) / span) * (cssH - 16);
+    const color = zoneColor(zoneFor(distanceOf(device)));
+
+    ctx.beginPath();
+    samples.forEach((v, i) => (i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v))));
+    ctx.lineTo(x(samples.length - 1), cssH);
+    ctx.lineTo(x(0), cssH);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, 0, 0, cssH);
+    grad.addColorStop(0, hexToRgba(color, 0.28));
+    grad.addColorStop(1, hexToRgba(color, 0));
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.beginPath();
+    samples.forEach((v, i) => (i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v))));
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.6;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  function drawDial(canvas, time) {
+    if (!canvas) return;
+    const { dpr, cssW, cssH } = fitCanvas(canvas);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+    const cx = cssW / 2;
+    const cy = cssH / 2;
+    const radius = Math.max(40, Math.min(cssW, cssH) / 2 - 24);
+    const sweep = STATE.sweep;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.22)';
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+
+    // 72 ticks
+    for (let i = 0; i < 72; i++) {
+      const a = (i / 72) * Math.PI * 2 - Math.PI / 2;
+      const major = i % 9 === 0;
+      const inner = radius * (major ? 0.90 : 0.945);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+      ctx.lineTo(cx + Math.cos(a) * radius * 0.99, cy + Math.sin(a) * radius * 0.99);
+      ctx.strokeStyle = major ? 'rgba(0, 229, 255, 0.6)' : 'rgba(0, 229, 255, 0.2)';
+      ctx.lineWidth = major ? 1.4 : 0.8;
+      ctx.stroke();
+    }
+
+    // coverage arc
+    const coverage = sweep ? clamp(sweep.coverage / 360, 0, 1) : 0;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius - 6, -Math.PI / 2, -Math.PI / 2 + coverage * Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.65)';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // heading needle
+    const heading = sweep ? sweep.heading : 0;
+    const a = (heading * Math.PI) / 180 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - Math.cos(a) * radius * 0.15, cy - Math.sin(a) * radius * 0.15);
+    ctx.lineTo(cx + Math.cos(a) * radius * 0.78, cy + Math.sin(a) * radius * 0.78);
+    ctx.strokeStyle = 'rgba(239, 244, 255, 0.85)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // strongest lobe marker
+    if (sweep && sweep.peak !== null) {
+      const pa = (sweep.peak * Math.PI) / 180 - Math.PI / 2;
+      const px = cx + Math.cos(pa) * radius * 0.72;
+      const py = cy + Math.sin(pa) * radius * 0.72;
+      const glow = ctx.createRadialGradient(px, py, 0, px, py, 22);
+      glow.addColorStop(0, 'rgba(255, 51, 85, 0.5)');
+      glow.addColorStop(1, 'rgba(255, 51, 85, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(px, py, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#FF3355';
+      ctx.fill();
+    }
+
+    // centre
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#00E5FF';
+    ctx.shadowColor = '#00E5FF';
+    ctx.shadowBlur = 18;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // confetti
+  const confetti = { parts: [], running: false, until: 0 };
+  function burstConfetti() {
+    const canvas = document.getElementById('confetti');
+    if (!canvas) return;
+    const { cssW, cssH } = fitCanvas(canvas);
+    const colors = ['#00E5FF', '#B14BFF', '#FF8A1F', '#2BFFB0', '#FF3355', '#FFFFFF'];
+    confetti.parts = Array.from({ length: 120 }, () => ({
+      x: cssW / 2 + (Math.random() - 0.5) * 60,
+      y: cssH * 0.55 + (Math.random() - 0.5) * 40,
+      vx: (Math.random() - 0.5) * 7,
+      vy: -Math.random() * 9 - 2,
+      size: 3 + Math.random() * 5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      angle: Math.random() * Math.PI,
+      spin: (Math.random() - 0.5) * 0.3
+    }));
+    confetti.running = true;
+    confetti.until = performance.now() + 3000;
+  }
+  function stepConfetti(dt) {
+    const canvas = document.getElementById('confetti');
+    if (!canvas) return;
+    if (!confetti.running) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+    const { w, h, dpr, cssW, cssH } = fitCanvas(canvas);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+    for (const p of confetti.parts) {
+      p.vy += 22 * dt;
+      p.vx *= 0.995;
+      p.x += p.vx * dt * 60;
+      p.y += p.vy * dt * 60;
+      p.angle += p.spin;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = clamp((confetti.until - performance.now()) / 700, 0, 1);
+      ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+      ctx.restore();
+    }
+    if (performance.now() > confetti.until) {
+      confetti.running = false;
+      confetti.parts = [];
+      ctx.clearRect(0, 0, cssW, cssH);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Rendering
+  // ---------------------------------------------------------------------------
+  const $ = (sel) => document.querySelector(sel);
+  const els = {};
+
+  function setText(id, value) {
+    const node = document.getElementById(id);
+    if (node) node.textContent = value;
+  }
+
+  function renderStatic() {
+    const s = t();
+    document.documentElement.lang = STATE.lang;
+    document.documentElement.dir = s.dir;
+    setText('app-name', s.appName);
+    setText('app-sub', s.appSub);
+    setText('mode-chip', s.demo);
+    document.getElementById('mode-chip').insertAdjacentHTML('afterbegin', '<span class="dot"></span>');
+    setText('scan-chip', s.scanning);
+    document.getElementById('scan-chip').insertAdjacentHTML('afterbegin', '<span class="dot"></span>');
+    setText('lbl-filter', s.filterLabel);
+    setText('lbl-nearby', s.nearby);
+    setText('radar-caption', s.radarCaption);
+    setText('tab-devices', s.tabs.devices);
+    setText('tab-radar', s.tabs.radar);
+    setText('tab-settings', s.tabs.settings);
+    setText('lbl-data', s.settings.data);
+    setText('lbl-mock', s.settings.mock);
+    setText('hint-mock', s.settings.mockHint);
+    setText('lbl-sound', s.settings.sound);
+    setText('hint-sound', s.settings.soundHint);
+    setText('lbl-haptics', s.settings.haptics);
+    setText('hint-haptics', s.settings.hapticsHint);
+    setText('lbl-units', s.settings.units);
+    setText('lbl-unit', s.settings.unit);
+    setText('lbl-calib', s.settings.calib);
+    setText('lbl-tx', s.settings.tx);
+    setText('lbl-n', s.settings.n);
+    setText('lbl-range', s.settings.range);
+    setText('lbl-about', s.settings.about);
+    setText('lbl-about-app', s.settings.aboutApp);
+    setText('hint-about', s.settings.aboutHint);
+    setText('lbl-spark', s.detail.spark);
+    setText('btn-sweep-label', s.detail.sweep);
+    setText('btn-sound-label', s.detail.sound);
+    setText('btn-found-label', s.detail.found);
+    setText('detail-away', STATE.unit === 'm' ? s.detail.away : s.detail.awayFt);
+    setText('k-bars', s.detail.signal);
+    setText('k-trend', s.detail.trend);
+    setText('k-ping', s.detail.ping);
+    setText('sweep-title', s.sweep.title);
+    setText('sweep-body', s.sweep.body);
+    setText('sweep-replay-label', s.sweep.replay);
+    setText('sweep-lock-label', s.sweep.lock);
+    setText('found-title', s.found.title);
+    setText('found-body', s.found.body);
+    setText('found-ok-label', s.found.ok);
+    const search = document.getElementById('search-input');
+    if (search) search.placeholder = s.search;
+
+    const unitButtons = document.querySelectorAll('#unit-seg button');
+    unitButtons.forEach((b) => {
+      b.classList.toggle('on', b.dataset.unit === STATE.unit);
+      b.textContent = b.dataset.unit === 'm' ? s.settings.metric : s.settings.imperial;
+    });
+
+    renderFilters();
+    renderTabs();
+  }
+
+  function renderFilters() {
+    const row = document.getElementById('filters');
+    if (!row) return;
+    const labels = t().filters;
+    row.innerHTML = Object.keys(labels)
+      .map(
+        (key) =>
+          `<button class="filter ${STATE.filter === key ? 'on' : ''}" data-filter="${key}">${labels[key]}</button>`
+      )
+      .join('');
+    row.querySelectorAll('[data-filter]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        STATE.filter = btn.dataset.filter;
+        renderFilters();
+        renderDeviceList();
+      });
+    });
+  }
+
+  function renderTabs() {
+    document.querySelectorAll('.tab').forEach((tab) => {
+      tab.classList.toggle('active', tab.dataset.screen === STATE.screen);
+    });
+  }
+
+  function glyphFor(kind, color) {
+    const icons = {
+      earbuds: '<path d="M7 9a3 3 0 0 1 6 0v5a3 3 0 0 1-6 0z"/><path d="M13 10h3a2 2 0 0 1 2 2v4a2 2 0 0 1-4 0"/>',
+      watch: '<rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6V3h6v3M9 18v3h6v-3"/><path d="M12 10v2l1.5 1"/>',
+      tracker: '<circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 6V3M12 21v-3"/>',
+      unknown: '<path d="M12 3v18M12 3l5 4-5 4M12 21l-5-4 5-4"/>'
+    };
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${icons[kind] || icons.unknown}</svg>`;
+  }
+
+  function filteredDevices() {
+    const query = STATE.query.trim().toLowerCase();
+    return DEVICES.filter((d) => {
+      if (STATE.filter !== 'all' && d.kind !== STATE.filter) return false;
+      if (!query) return true;
+      return (d.name || 'unknown').toLowerCase().includes(query) || d.id.toLowerCase().includes(query);
+    }).sort((a, b) => distanceOf(a) - distanceOf(b));
+  }
+
+  function renderDeviceList() {
+    const list = document.getElementById('device-list');
+    if (!list) return;
+    const strings = t();
+    list.innerHTML = filteredDevices()
+      .map((d) => {
+        const distance = distanceOf(d);
+        const zone = zoneFor(distance);
+        const color = zoneColor(zone);
+        const meters = STATE.unit === 'm' ? distance : distance * 3.280839895;
+        const value = meters < 10 ? meters.toFixed(2) : meters.toFixed(1);
+        const bars = d.ema >= -55 ? 4 : d.ema >= -67 ? 3 : d.ema >= -78 ? 2 : d.ema >= -88 ? 1 : 0;
+        const barHtml = [0, 1, 2, 3].map((i) => `<i class="${i < bars ? 'on' : ''}"></i>`).join('');
+        const name = d.name || (STATE.lang === 'ar' ? 'جهاز غير معروف' : 'Unknown device');
+        return `
+          <div class="card" data-id="${d.id}" style="color:${color}">
+            <span class="accent" style="background:${color};box-shadow:0 0 16px ${color}"></span>
+            <div class="glyph" style="border-color:${hexToRgba(color, 0.35)}">${glyphFor(d.kind, color)}</div>
+            <div class="card-body">
+              <div class="card-title">
+                <strong style="color:var(--text)">${name}</strong>
+                <span class="tag" style="color:${color}">${strings.filters[d.kind]}</span>
+              </div>
+              <div class="card-sub"><span>${shortId(d.id)}</span><span>·</span><span style="color:${color}">${zoneLabel(zone)}</span></div>
+            </div>
+            <div class="card-right">
+              <div class="metric" style="color:${color}">${value}<small>${STATE.unit === 'm' ? 'm' : 'ft'}</small></div>
+              <div class="bars" style="color:${color}">${barHtml}</div>
+            </div>
+          </div>`;
+      })
+      .join('');
+    list.querySelectorAll('.card').forEach((card) => {
+      card.addEventListener('click', () => openDetail(card.dataset.id));
+    });
+  }
+
+  function renderUnitLabels() {
+    const rangeText = STATE.unit === 'm'
+      ? `${STATE.range} m`
+      : `${Math.round(STATE.range * 3.280839895)} ft`;
+    document.getElementById('range-pill').innerHTML = `${t().range} <b>${rangeText}</b>`;
+    setText('val-range', rangeText);
+    setText('val-tx', `−${Math.abs(STATE.txPower)} dBm`);
+    setText('val-n', STATE.pathLoss.toFixed(1));
+    setText('detail-unit', STATE.unit === 'm' ? 'm' : 'ft');
+  }
+
+  function openDetail(id) {
+    STATE.detailId = id;
+    STATE.foundId = null;
+    const device = activeDevice();
+    if (!device) return;
+    setText('detail-title', device.name || (STATE.lang === 'ar' ? 'جهاز غير معروف' : 'Unknown device'));
+    setText('detail-id', shortId(device.id));
+    document.getElementById('detail').classList.add('active');
+    schedulePing();
+  }
+
+  function closeDetail() {
+    STATE.detailId = null;
+    document.getElementById('detail').classList.remove('active');
+    clearTimeout(pingTimer);
+    pingTimer = null;
+    lastPingAt = 0;
+  }
+
+  function updateDetail() {
+    const device = activeDevice();
+    if (!device) return;
+    const distance = distanceOf(device);
+    const zone = zoneFor(distance);
+    const color = zoneColor(zone);
+    const meters = STATE.unit === 'm' ? distance : distance * 3.280839895;
+    const digits = meters < 10 ? 2 : 1;
+
+    const valueEl = document.getElementById('detail-distance');
+    valueEl.innerHTML = `${meters.toFixed(digits)}<small id="detail-unit">${STATE.unit === 'm' ? 'm' : 'ft'}</small>`;
+    valueEl.style.color = color;
+    valueEl.style.textShadow = `0 0 28px ${hexToRgba(color, 0.55)}`;
+
+    const zoneEl = document.getElementById('detail-zone');
+    zoneEl.textContent = zoneLabel(zone);
+    zoneEl.style.color = color;
+
+    setText('detail-rssi', `${Math.round(device.ema)} dBm`);
+    setText('detail-away', STATE.unit === 'm' ? t().detail.away : t().detail.awayFt);
+
+    const bars = device.ema >= -55 ? 4 : device.ema >= -67 ? 3 : device.ema >= -78 ? 2 : device.ema >= -88 ? 1 : 0;
+    setText('v-bars', '▮'.repeat(bars) + '▯'.repeat(4 - bars));
+    document.getElementById('v-bars').style.color = color;
+
+    const recent = device.history.slice(-8);
+    const trend = recent.length > 3 ? recent[recent.length - 1] - recent[0] : 0;
+    const arrow = trend > 1.2 ? '↗' : trend < -1.2 ? '↘' : '→';
+    setText('v-trend', arrow);
+    setText('v-ping', `${pingInterval(distance, STATE.range)} ms`);
+
+    drawSparkline(document.getElementById('spark'), device);
+    const detailRadar = document.getElementById('detail-radar');
+    if (detailRadar) drawRadar(detailRadar, performance.now() / 1000, { focusId: device.id });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sweep assistant
+  // ---------------------------------------------------------------------------
+  function startSweep() {
+    const device = activeDevice();
+    if (!device) return;
+    STATE.sweep = {
+      start: performance.now(),
+      duration: 9000,
+      heading: 0,
+      peak: null,
+      best: -999,
+      coverage: 0,
+      done: false,
+      samples: 0
+    };
+    document.getElementById('sweep').classList.add('active');
+    setText('sweep-heading', '—');
+    setText('sweep-caption', `${t().sweep.coverage} 0° / 360°`);
+    setText('sweep-lock-label', t().sweep.lock);
+  }
+
+  function updateSweep() {
+    const sweep = STATE.sweep;
+    if (!sweep) return;
+    const device = activeDevice();
+    if (!device) return;
+    const elapsed = performance.now() - sweep.start;
+    const progress = clamp(elapsed / sweep.duration, 0, 1);
+    const trueBearing = ((device.angle * 180) / Math.PI + 360) % 360;
+    const heading = (progress * 360 + Math.sin(elapsed / 320) * 4 + 360) % 360;
+    sweep.heading = heading;
+    sweep.coverage = progress * 360;
+
+    // signal peaks when facing the device
+    const delta = Math.abs(((heading - trueBearing + 540) % 360) - 180);
+    const facing = 1 - clamp(delta / 90, 0, 1);
+    const sample = (device.ema ?? -70) + facing * 22 + (Math.random() - 0.5) * 3;
+    if (sample > sweep.best) {
+      sweep.best = sample;
+      sweep.peak = heading;
+    }
+    sweep.samples += 1;
+
+    setText('sweep-heading', `${Math.round(heading)}°`);
+    setText('sweep-caption', `${t().sweep.coverage} ${Math.round(sweep.coverage)}° / 360°`);
+
+    if (progress >= 1 && !sweep.done) {
+      sweep.done = true;
+      const locked = Math.round(((sweep.peak ?? 0) + 360) % 360);
+      setText('sweep-heading', `${locked}° · ${compassPoint(locked)}`);
+      setText('sweep-caption', `${t().sweep.coverage} 360° / 360° · ${sweep.samples} samples`);
+    }
+  }
+
+  function compassPoint(deg) {
+    const points = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return points[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Events
+  // ---------------------------------------------------------------------------
+  function bind() {
+    document.querySelectorAll('.tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        STATE.screen = tab.dataset.screen;
+        document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+        document.getElementById(`screen-${STATE.screen}`).classList.add('active');
+        renderTabs();
+      });
+    });
+
+    const search = document.getElementById('search-input');
+    if (search) {
+      search.value = STATE.query;
+      search.addEventListener('input', (event) => {
+        STATE.query = event.target.value;
+        renderDeviceList();
+      });
+    }
+
+    document.getElementById('range-pill').addEventListener('click', () => {
+      const steps = [10, 20, 30, 50];
+      const idx = (steps.indexOf(STATE.range) + 1) % steps.length;
+      STATE.range = steps[idx];
+      document.getElementById('range-range').value = String(STATE.range);
+      renderUnitLabels();
+      renderDeviceList();
+    });
+
+    document.getElementById('lang-btn').addEventListener('click', () => {
+      STATE.lang = STATE.lang === 'en' ? 'ar' : 'en';
+      renderStatic();
+      renderUnitLabels();
+      renderDeviceList();
+      if (STATE.detailId) openDetail(STATE.detailId);
+      if (STATE.sweep) setText('sweep-caption', `${t().sweep.coverage} ${Math.round(STATE.sweep.coverage)}° / 360°`);
+    });
+
+    document.getElementById('sw-mock').addEventListener('click', () => {
+      toast(t().toast.mock);
+    });
+    document.getElementById('sw-sound').addEventListener('click', (event) => {
+      STATE.sound = !STATE.sound;
+      event.currentTarget.classList.toggle('on', STATE.sound);
+      if (STATE.sound) { ensureAudio(); beep(1500, 0.08, 0.05); }
+    });
+    document.getElementById('sw-haptics').addEventListener('click', (event) => {
+      STATE.haptics = !STATE.haptics;
+      event.currentTarget.classList.toggle('on', STATE.haptics);
+      vibrate(18);
+    });
+
+    document.querySelectorAll('#unit-seg button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        STATE.unit = btn.dataset.unit;
+        renderStatic();
+        renderUnitLabels();
+        renderDeviceList();
+      });
+    });
+
+    document.getElementById('tx-range').addEventListener('input', (event) => {
+      STATE.txPower = Number(event.target.value);
+      renderUnitLabels();
+      renderDeviceList();
+    });
+    document.getElementById('n-range').addEventListener('input', (event) => {
+      STATE.pathLoss = Number(event.target.value);
+      renderUnitLabels();
+      renderDeviceList();
+    });
+    document.getElementById('range-range').addEventListener('input', (event) => {
+      STATE.range = Number(event.target.value);
+      renderUnitLabels();
+      renderDeviceList();
+    });
+
+    document.getElementById('detail-back').addEventListener('click', closeDetail);
+
+    document.getElementById('btn-sound').addEventListener('click', () => {
+      const device = activeDevice();
+      if (!device) return;
+      ensureAudio();
+      chime();
+      vibrate(30);
+      toast(t().toast.sound || (STATE.lang === 'ar' ? 'تم إرسال تنبيه صوتي' : 'Alert sent'));
+    });
+
+    document.getElementById('btn-sweep').addEventListener('click', startSweep);
+
+    document.getElementById('btn-found').addEventListener('click', () => {
+      if (!STATE.detailId) return;
+      burstConfetti();
+      chime();
+      vibrate([20, 40, 20]);
+      document.getElementById('found').classList.add('active');
+      toast(t().toast.found);
+    });
+
+    document.getElementById('found-ok').addEventListener('click', () => {
+      document.getElementById('found').classList.remove('active');
+      closeDetail();
+      STATE.screen = 'radar';
+      document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+      document.getElementById('screen-radar').classList.add('active');
+      renderTabs();
+    });
+
+    document.getElementById('sweep-close').addEventListener('click', () => {
+      STATE.sweep = null;
+      document.getElementById('sweep').classList.remove('active');
+    });
+    document.getElementById('sweep-replay').addEventListener('click', startSweep);
+    document.getElementById('sweep-lock').addEventListener('click', () => {
+      const sweep = STATE.sweep;
+      const device = activeDevice();
+      if (!sweep || !device) return;
+      if (sweep.peak === null) {
+        toast(STATE.lang === 'ar' ? 'أكمل المسح أولاً' : 'Finish the sweep first');
+        return;
+      }
+      device.lockedBearing = (sweep.peak * Math.PI) / 180;
+      document.getElementById('sweep').classList.remove('active');
+      STATE.sweep = null;
+      toast(t().toast.bearing);
+      vibrate(30);
+    });
+
+    const phone = document.getElementById('phone');
+    phone.addEventListener('pointerdown', () => ensureAudio(), { once: true });
+    window.addEventListener('resize', () => {
+      const canvas = document.getElementById('radar');
+      if (canvas) fitCanvas(canvas);
+    });
+  }
+
+  let toastTimer = null;
+  function toast(message) {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Main loop
+  // ---------------------------------------------------------------------------
+  let last = performance.now();
+  let lastDetailUpdate = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    simulate(dt);
+
+    const radar = document.getElementById('radar');
+    if (radar && STATE.screen === 'radar') {
+      drawRadar(radar, now / 1000);
+    }
+    if (STATE.detailId) {
+      // The readouts animate at ~15 fps; the radar canvases stay at display rate.
+      if (now - lastDetailUpdate > 66) {
+        lastDetailUpdate = now;
+        updateDetail();
+        if (STATE.sweep) updateSweep();
+      }
+      const dial = document.getElementById('dial');
+      if (dial && STATE.sweep) drawDial(dial, now / 1000);
+    }
+    stepConfetti(dt);
+    requestAnimationFrame(frame);
+  }
+
+  // List refresh at 1 Hz, mirroring AppConstants.uiRefreshInterval
+  setInterval(() => {
+    if (STATE.screen === 'devices') renderDeviceList();
+  }, 1000);
+
+  // Init
+  renderStatic();
+  renderUnitLabels();
+  renderDeviceList();
+  bind();
+  simulate(0);
+  requestAnimationFrame(frame);
+  // Prime the detail screen once so its layout is measured before first open.
+  document.getElementById('detail').classList.remove('active');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
+android/app/upload-keystore.jks
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.metadata
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local tooling
+node_modules/
+preview/.cache/
+__pycache__/
+*.pyc

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ultra-dark cyber palette, mirrored from lib/core/theme/radar_colors.dart -->
+    <color name="radar_background">#08090E</color>
+    <color name="radar_surface">#101320</color>
+    <color name="radar_cyan">#00E5FF</color>
+    <color name="ic_launcher_background">#08090E</color>
+</resources>
