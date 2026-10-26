@@ -1,4 +1,10 @@
 # Flutter engine + embedding ---------------------------------------------------
+# The embedding references Play Core's deferred-component classes, but this app
+# does not use deferred components. R8 full mode fails on the missing classes
+# unless they are explicitly ignored (canonical Flutter/R8 fix).
+-dontwarn com.google.android.play.core.**
+-dontwarn io.flutter.app.FlutterPlayStoreSplitApplication
+-keep class io.flutter.app.** { *; }
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
 -keep class io.flutter.plugin.** { *; }
