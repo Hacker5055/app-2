@@ -18,7 +18,8 @@ a tracker tag or an unnamed beacon.
 
 | What | Where |
 | ---- | ----- |
-| **Latest signed-for-testing ARM64 APK** | [**app-release.apk (v1.0.0)**](https://github.com/Hacker5055/app-2/releases/download/apk-latest/app-release.apk) · [all releases](https://github.com/Hacker5055/app-2/releases) |
+| **APK v1.0.0** (arm64-v8a, 18.2 MB) | [**app-release.apk**](https://github.com/Hacker5055/app-2/releases/download/v1.0.0/app-release.apk) · [release notes](https://github.com/Hacker5055/app-2/releases/tag/v1.0.0) |
+| Rolling build of `main` / current branch | [apk-latest](https://github.com/Hacker5055/app-2/releases/download/apk-latest/app-release.apk) |
 | Build logs / artifacts | [GitHub Actions](https://github.com/Hacker5055/app-2/actions/workflows/android-release.yml) |
 
 The APK is produced by CI on every push to `main` (and on this branch) with
