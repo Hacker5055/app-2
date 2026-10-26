@@ -1,0 +1,6 @@
+# Copy to android/key.properties before running a publishable release build.
+storePassword=your-store-password
+keyPassword=your-key-password
+keyAlias=upload
+# Path to the JKS/PKCS12 keystore, absolute or relative to android/app/.
+storeFile=/absolute/path/to/upload-keystore.jks

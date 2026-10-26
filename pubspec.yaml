@@ -1,0 +1,54 @@
+name: bluetooth_finder_radar
+description: "Bluetooth Finder Radar (رادار الأجهزة المفقودة) — a cyber-radar style BLE proximity finder for Android."
+publish_to: "none"
+
+# version: <semver>+<build number>. The build number is used as the APK versionCode.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.27.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # BLE stack (scanning, adaptation of advertisement data, best-effort GATT alerts).
+  flutter_blue_plus: ^1.35.6
+  # Runtime permission flow (Android 12+ BLUETOOTH_SCAN / BLUETOOTH_CONNECT + legacy location).
+  permission_handler: ^11.3.1
+  # Android API level detection, so the runtime permission flow matches the OS.
+  device_info_plus: ^11.1.0
+  # Magnetometer heading for the 360° sweep assistant.
+  flutter_compass: ^0.8.1
+  # State management.
+  provider: ^6.1.2
+  # Persisted preferences (mock mode, sound, haptics, units, calibration).
+  shared_preferences: ^2.3.2
+  # Geiger-style ping + celebratory chime.
+  audioplayers: ^6.0.0
+  # "Mark as found" celebration.
+  confetti: ^0.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/audio/
+
+# Regenerate platform launcher icons after replacing assets/icon/app_icon.png:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: false
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#08090E"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
